@@ -1,5 +1,13 @@
 import os
 
+'''
+Converts prediction output back to cupt format
+
+Input: IBOo seqeunces
+Output: CUPT tsv file
+
+'''
+
 def labels2Parsemetsv(labels, mainTest, predOut):
     """
     labels: predicted labels

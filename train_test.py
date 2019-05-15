@@ -7,6 +7,14 @@ from sklearn.model_selection import KFold
 from models.tag_models import Tagger
 import sys
 
+
+'''
+Train, test, and cross val,
+	writes output files,
+	fits model
+
+'''
+
 class Train_Test():
 	"""This class contains methods to train, test or cross-validate models. 
 

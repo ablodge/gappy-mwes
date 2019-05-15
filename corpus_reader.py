@@ -2,6 +2,17 @@ import os
 from corpus import Corpus
 import pickle
 
+'''
+Called in preprocessing.py
+
+Input: list(Sentence) : from ATILF-LLF.v2 Corpus
+    sent.text or sent.tokens
+
+Output: list(tuple)
+    (token, lemma, posTag, dependencyParent, dependencyLabel, mwe_tag)
+
+'''
+
 
 class Corpus_reader:
     """
