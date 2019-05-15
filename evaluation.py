@@ -8,8 +8,8 @@ def labels2Parsemetsv(labels, mainTest, predOut):
 
     This function is used to convert IOB labeling back to the Parseme format for evaluation.
     """
-    with open(predOut, 'w') as predFile:
-        with open(mainTest) as bt:
+    with open(predOut, 'w', encoding='utf8') as predFile:
+        with open(mainTest, encoding='utf8') as bt:
             lines = bt.readlines()
             sentIdx = -1
             i=0

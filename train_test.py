@@ -4,7 +4,8 @@ from keras.callbacks import ModelCheckpoint
 from evaluation import labels2Parsemetsv
 
 from sklearn.model_selection import KFold
-from models.tag_models import Tagger 
+from models.tag_models import Tagger
+import sys
 
 class Train_Test():
 	"""This class contains methods to train, test or cross-validate models. 
@@ -101,13 +102,21 @@ class Train_Test():
 		if self.data.testORdev == "TEST":	# we have DEV as part of training and are evaluating the test
 			labels2Parsemetsv(labels1, data_path+'{}/test.cupt'.format(self.data.lang), prediction_file_name+'_system.cupt')
 
-			with open(self.res_dir + '/eval'.format(self.data.lang)+self.tagger_name+'.txt', 'w') as f:
-				f.write(subprocess.check_output([data_path+"bin/evaluate_v1.py", "--train", data_path+"{}/train.cupt".format(self.data.lang), "--gold", data_path+"{}/test.cupt".format(self.data.lang), "--pred", prediction_file_name+"_system.cupt" ]).decode())
+			with open(self.res_dir + '/eval'.format(self.data.lang)+self.tagger_name+'.txt', 'w', encoding='utf8') as f:
+				f.write(subprocess.check_output([sys.executable,
+												 data_path+"bin/evaluate_v1.py",
+												 "--train", data_path+"{}/train.cupt".format(self.data.lang),
+												 "--gold", data_path+"{}/test.cupt".format(self.data.lang),
+												 "--pred", prediction_file_name+"_system.cupt" ]).decode())
 		else:
 			labels2Parsemetsv(labels1, data_path+'/{}/dev.cupt'.format(self.data.lang), prediction_file_name+'_system.cupt')
 
-			with open(self.res_dir + '/eval'.format(self.data.lang)+self.tagger_name+'.txt', 'w') as f:
-				f.write(subprocess.check_output([data_path+"bin/evaluate_v1.py", "--train", data_path+"{}/train.cupt".format(self.data.lang), "--gold", data_path+"{}/dev.cupt".format(self.data.lang), "--pred", prediction_file_name+"_system.cupt" ]).decode())
+			with open(self.res_dir + '/eval'.format(self.data.lang)+self.tagger_name+'.txt', 'w', encoding='utf8') as f:
+				f.write(subprocess.check_output([sys.executable,
+												 data_path+"bin/evaluate_v1.py",
+												 "--train", data_path+"{}/train.cupt".format(self.data.lang),
+												 "--gold", data_path+"{}/dev.cupt".format(self.data.lang),
+												 "--pred", prediction_file_name+"_system.cupt" ]).decode())
 
 	def cross_validation(self, epoch, batch_size, data_path):
 		if self.data.testORdev == "CROSS_VAL": 
@@ -182,6 +191,6 @@ class Train_Test():
 		print("len(labels1)",len(labels1))
 		labels2Parsemetsv(labels1, data_path+'{}/train.cupt'.format(self.data.lang), prediction_file_name+'_system.cupt')
 
-		with open(self.res_dir + '/eval'.format(self.data.lang)+self.tagger_name+'.txt', 'w') as f:
+		with open(self.res_dir + '/eval'.format(self.data.lang)+self.tagger_name+'.txt', 'w', encoding='utf8') as f:
 			f.write(subprocess.check_output([data_path+"bin/evaluate_v1.py", "--gold", data_path+"{}/train.cupt".format(self.data.lang), "--pred", prediction_file_name+"_system.cupt" ]).decode())
 	

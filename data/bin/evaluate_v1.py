@@ -17,15 +17,15 @@ parser.add_argument("--combinatorial", action="store_true",
         help="""Run O(n!) algorithm for weighted bipartite matching. 
         You should probably not use this option""")
 parser.add_argument("--train", metavar="train_file", dest="train_file",
-        required=False, type=argparse.FileType('r'),
+        required=False, type=argparse.FileType('r', encoding='utf8'),
         help="""The training file in .cupt format (to calculate 
         statistics regarding seen MWEs)""")
 parser.add_argument("--gold", metavar="gold_file", dest="gold_file",
-        required=True, type=argparse.FileType('r'),
+        required=True, type=argparse.FileType('r', encoding='utf8'),
         help="""The reference gold-standard file in .cupt format""")
 parser.add_argument("--pred", metavar="prediction_file", 
         dest="prediction_file", required=True, 
-        type=argparse.FileType('r'),
+        type=argparse.FileType('r', encoding='utf8'),
         help="""The system prediction file in .cupt format""")
 
 UNLABELED = '<unlabeled>'

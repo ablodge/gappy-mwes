@@ -74,7 +74,7 @@ class Corpus:
     def readCuptFile(cuptFile):
         sentences = []
         mweNum = 0      # ADDED by me
-        with open(cuptFile) as corpusFile:
+        with open(cuptFile, encoding='utf8') as corpusFile:
             # Read the corpus file
             lines = corpusFile.readlines()
             sent = None
@@ -159,7 +159,7 @@ class Corpus:
     def readBlindTestFile(cuptFile):
         sentences = []
         mweNum = 0      # ADDED by me
-        with open(cuptFile) as corpusFile:
+        with open(cuptFile, encoding='utf8') as corpusFile:
             # Read the corpus file
             lines = corpusFile.readlines()
             sent = None
@@ -267,7 +267,7 @@ class Corpus:
     def readSentences(mweFile, forTest=False):
         sentences = []
         sentNum, mweNum = 0, 0
-        with open(mweFile) as corpusFile:
+        with open(mweFile, encoding='utf8') as corpusFile:
             # Read the corpus file
             lines = corpusFile.readlines()
             sent = None

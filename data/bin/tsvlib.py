@@ -300,7 +300,7 @@ def excepthook(exctype, value, tb):
 
 if __name__ == "__main__":
     sys.excepthook = excepthook
-    with open(sys.argv[1]) as f:
+    with open(sys.argv[1], encoding='utf8') as f:
         for tsv_sentence in iter_tsv_sentences(f):
             print("TSVSentence:", tsv_sentence)
             print("MWEs:", tsv_sentence.mwe_infos())
