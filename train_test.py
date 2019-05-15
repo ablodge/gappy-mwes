@@ -53,11 +53,11 @@ class Train_Test():
 		callbacks_list = [checkpoint]
 
 		# preparing the inputs
-		inputs = []
-		if "elmo" in self.tagger_name.lower():
-			inputs = [self.data.train_weights]
-		if self.w2v:
-			inputs += [self.data.X_train_enc]
+		inputs = [self.data.X_train_enc]
+		# if "elmo" in self.tagger_name.lower():
+		# 	inputs = [self.data.train_weights]
+		# if self.w2v:
+		# 	inputs += [self.data.X_train_enc]
 		if self.pos:
 			inputs += [self.data.pos_train_enc]
 		if self.data.depAdjacency_gcn:

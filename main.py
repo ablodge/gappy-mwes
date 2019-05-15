@@ -17,11 +17,11 @@ BATCH_SIZE = 100			# set training batch size
 DATAPATH = "./data/"			# for each language, place train, dev, and test files in an appropriately named folder (i.e. EN|FR|FA|DE)		
 initial_weight=''			# training can be resumed from a checkpoint if a saved file of weights is assigned to this variable 
 POSITION_EMBED = False			# position embedding wasn't used (as explained in Sec 2.2 of the paper)  
-WV_DIR = "" 				# the directory for word2vec embeddings (if applicable, pass an empty string) 
-ELMO_PATH = "./embeddings"	    	# Place your embedding files in this directory (with the format ELMO_{EN|FR|FA|DE})
+GLOVE_FILE = "./embeddings/glove.6B.100d.txt" 				# the directory for word2vec embeddings (if applicable, pass an empty string)
+ELMO_FILE = "./embeddings/ELMo_EN.hdf5"	    	# Place your embedding files in this directory (with the format ELMO_{EN|FR|FA|DE})
 
 def run_model():
-	d = Data(LANG, DEVorTEST, WV_DIR, ELMO_PATH, MODEL, DEP_ADJACENCY_GCN, POSITION_EMBED)
+	d = Data(LANG, DEVorTEST, GLOVE_FILE, ELMO_FILE, MODEL, DEP_ADJACENCY_GCN, POSITION_EMBED)
 	d.load_data(DATAPATH)	 	# This loads train, dev, and test if available, and also word2vec and ELMo where relevant 
 
 	model = Tagger(d, d.max_length, d.input_dim, d.n_poses, d.n_classes, initial_weight)  

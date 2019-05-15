@@ -54,10 +54,10 @@ class Data(object):
         * testORdev: whether we are getting results on test or development set
     """
 
-    def __init__(self, lang, testORdev, word2vec_dir, elmo_dir, model_name, depAdjacency_gcn=0, position_embed=False):
+    def __init__(self, lang, testORdev, glove_file, elmo_file, model_name, depAdjacency_gcn=0, position_embed=False):
         self.lang = lang
-        self.word2vec_dir = word2vec_dir
-        self.elmo_dir = elmo_dir
+        self.glove_file = glove_file
+        self.elmo_file = elmo_file
         self.input_dim = 0
         self.model_name = model_name
         self.testORdev = testORdev
@@ -213,7 +213,7 @@ class Data(object):
         self.pos_test_enc = np.array([[self.pos_one_hot[p] for p in poses] for poses in self.pos_test_enc])
         print("train pos array shape", self.pos_train_enc.shape)  # pos information is not necessarily used by the model
 
-        if self.elmo_dir:
+        if self.elmo_file:
             self.train_weights = self.load_elmo(X_train)  # , pos_train)
 
             self.test_weights = self.load_elmo(X_test)  # , pos_test)
@@ -222,7 +222,7 @@ class Data(object):
             print("train weights type: ", self.train_weights.dtype)
             self.input_dim = len(self.train_weights[0][0])
 
-        if self.word2vec_dir:
+        if self.word2vec_file:
             self.load_word2vec()
 
         if self.depAdjacency_gcn:
@@ -242,90 +242,73 @@ class Data(object):
         #	lst = np.add(lst, self.get_pos_encoding(1024))
         #	print('size of the position encoded embedding: ', lst.shape)
 
-    def load_word2vec(self):
-        if not self.word2vec_dir:
+    def load_glove(self):
+        if not self.glove_file:
             pass  # do nothing if there is no path to a pre-trained embedding avialable
         else:
             print("loading word2vec ...")
-            wvmodel = KeyedVectors.load_word2vec_format("{}".format(self.word2vec_dir))
+            embeddings_index = {}
+            f = open(glove_file, encoding='utf8')
+            for line in f:
+                values = line.split()
+                word = values[0]
+                coefs = np.asarray(values[1:], dtype='float32')
+                embeddings_index[word] = coefs
+            f.close()
 
-            embedding_dimension = wvmodel.vector_size
-            embedding_matrix = np.zeros((self.vocab_size, embedding_dimension))
-            self.input_dim += embedding_dimension
-            UNKOWN = np.random.uniform(-1, 1, embedding_dimension)
+            print('Found %s word vectors.' % len(embeddings_index))
 
-            for word, i in self.w2idx.items():
-                if word in wvmodel.wv.vocab:
-                    embedding_matrix[i] = wvmodel.wv[word]
-                else:
-                    embedding_matrix[i] = UNKOWN
-            # embedding_matrix[i][-7:] = self.word_shape(word)
-
-            embedding_matrix[self.w2idx['<PAD>']] = np.zeros((embedding_dimension))
+            embedding_matrix = np.zeros((len(vocab), embedding_dim))
+            for word, i in vocab.items():
+                embedding_vector = embeddings_index.get(word)
+                if embedding_vector is not None:
+                    # words not found in embedding index will be all-zeros.
+                    embedding_matrix[i] = embedding_vector
 
             self.embedding_layer = Embedding(embedding_matrix.shape[0],
                                              embedding_matrix.shape[1],
                                              weights=[embedding_matrix],
                                              trainable=False,
-                                             name='embed_layer')
+                                             name='glove_layer')
 
     def load_elmo(self, X):  # the aim is to create a numpy array of shape (sent_num, max_sent_size, 1024)
-        if not self.elmo_dir:
+        if not self.elmo_file:
             pass  # do nothing if there is no path to a pre-trained elmo avialable
         else:
-            filename = self.elmo_dir + '/ELMo_{}'.format(self.lang)
-            elmo_dict = h5py.File(filename, 'r')
-            lst = []
-            not_in_dict = 0
-            for sent_toks in X:
-                sent = "\t".join(sent_toks)
-                if sent in elmo_dict:
-                    item = list(elmo_dict[sent])  # ELMo representations for all words in the sentence
-                else:
-                    print("NO", sent, "is not in ELMO")
-                    not_in_dict += 1
-                    item = list(np.zeros((len(sent_toks), 1024)))
-                min_lim = len(item)  # len(sent_toks)
-                for i in range(min_lim, self.max_length):  # Here, we do padding, to make all sentences the same size
-                    item.append([0] * 1024)
-
-                lst.append(item)
-            if len(X):
-                print('not found sentences:', not_in_dict)
-
+            self.embedding_layer = ElmoEmbeddingLayer()
             print('ELMO Loaded ...')
             return np.array(lst, dtype=np.float32)
 
-    def load_headVectors(self, X, dep):
-
-        filename = self.elmo_dir + '/ELMo_{}'.format(self.lang)
-        elmo_dict = h5py.File(filename, 'r')
-        lst = []
-        sentIndx = 0
-        for sent_toks, dep_toks in zip(X, dep):
-            sent = "\t".join(sent_toks)
-            if sent in elmo_dict:
-                item = list(elmo_dict[sent])
-            else:
-                item = list(np.zeros((len(sent_toks), 1024)))
-            min_lim = len(item)
-            sent_deps = []
-            for i in range(0, len(sent_toks)):
-                if int(dep[sentIndx][i]) > min_lim and min_lim != 0:
-                    print("error ", str(dep[sentIndx][i]), "greater than the sent length ", str(min_lim))
-                if int(dep[sentIndx][i]) - 1:
-                    sent_deps.append(item[int(dep_toks[i]) - 1])
-                else:  # the word is the root in the sent
-                    # item[i] = list(item[i]).extend([0]*1024)
-                    sent_deps.append(item[i])
-
-            for i in range(min_lim, self.max_length):
-                sent_deps.append([0] * 1024)
-
-            lst.append(sent_deps)
-            sentIndx += 1
-        print("dep head vectors shape: ", np.array(lst).shape)
-        return np.array(lst)
+    # def load_headVectors(self, X, dep):
+    #
+    #     filename = self.elmo_dir + '/ELMo_{}'.format(self.lang)
+    #     elmo_dict = h5py.File(filename, 'r')
+    #     lst = []
+    #     sentIndx = 0
+    #     for sent_toks, dep_toks in zip(X, dep):
+    #         sent = "\t".join(sent_toks)
+    #         if sent in elmo_dict:
+    #             item = list(elmo_dict[sent])
+    #         else:
+    #             item = list(np.zeros((len(sent_toks), 1024)))
+    #         min_lim = len(item)
+    #         sent_deps = []
+    #         for i in range(0, len(sent_toks)):
+    #             if int(dep[sentIndx][i]) > min_lim and min_lim != 0:
+    #                 print("error ", str(dep[sentIndx][i]), "greater than the sent length ", str(min_lim))
+    #             if int(dep[sentIndx][i]) - 1:
+    #                 sent_deps.append(item[int(dep_toks[i]) - 1])
+    #             else:  # the word is the root in the sent
+    #                 # item[i] = list(item[i]).extend([0]*1024)
+    #                 sent_deps.append(item[i])
+    #
+    #         for i in range(min_lim, self.max_length):
+    #             sent_deps.append([0] * 1024)
+    #
+    #         lst.append(sent_deps)
+    #         sentIndx += 1
+    #     print("dep head vectors shape: ", np.array(lst).shape)
+    #     return np.array(lst)
 
     def load_adjacency(self, dep, direction):
 
@@ -370,3 +353,31 @@ class Data(object):
         pos_enc[1:, 0::2] = np.sin(pos_enc[1:, 0::2])  # dim 2i
         pos_enc[1:, 1::2] = np.cos(pos_enc[1:, 1::2])  # dim 2i+1
         return pos_enc
+
+
+# taken from
+class ElmoEmbeddingLayer(Layer):
+
+    def __init__(self, **kwargs):
+        self.dimensions = 100
+        self.trainable = False
+        super(ElmoEmbeddingLayer, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.elmo = hub.Module('https://tfhub.dev/google/elmo/2', trainable=self.trainable,
+                               name="{}_module".format(self.name))
+        self.trainable_weights += K.tf.trainable_variables(scope="^{}_module/.*".format(self.name))
+        super(ElmoEmbeddingLayer, self).build(input_shape)
+
+    def call(self, x, mask=None):
+        result = self.elmo(K.squeeze(K.cast(x, tf.string), axis=1),
+                           as_dict=True,
+                           signature='default',
+                           )['default']
+        return result
+
+    def compute_mask(self, inputs, mask=None):
+        return K.not_equal(inputs, '<PAD>')
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], self.dimensions)
