@@ -29,7 +29,6 @@ class Train_Test():
 		self.tagger_name = tagger_name
 		self.tagger = tagger 
 		self.data = data
-		self.w2v = self.data.word2vec_dir
 
 	def train(self, epoch, batch_size):
 		# preparing the name for the folder results corresponding to the name of the model, settings and language.
@@ -54,8 +53,8 @@ class Train_Test():
 
 		# preparing the inputs
 		inputs = [self.data.X_train_enc]
-		# if "elmo" in self.tagger_name.lower():
-		# 	inputs = [self.data.train_weights]
+		if "elmo" in self.tagger_name.lower():
+			inputs = [self.data.X_train_text]
 		# if self.w2v:
 		# 	inputs += [self.data.X_train_enc]
 		if self.pos:
@@ -80,23 +79,24 @@ class Train_Test():
 						   callbacks=callbacks_list)
 		
 	def test(self, data_path):
-		inputs = []
+		inputs = [self.data.X_test_enc]
 		if "elmo" in self.tagger_name.lower():
-			inputs = [self.data.test_weights]
-		if self.w2v:
-			inputs += [self.data.X_test_enc]
+			inputs = [self.data.X_test_text]
+		# if self.w2v:
+		# 	inputs += [self.data.X_test_enc]
 		if self.pos:
 			inputs += [self.data.pos_test_enc]
 		if self.data.depAdjacency_gcn:
 			inputs += self.data.test_adjacency_matrices
 		
 		if len(inputs)==1:
-			preds = self.tagger.predict(inputs[0], batch_size=16, verbose=1)
+			preds = self.tagger.predict(inputs[0], batch_size=100, verbose=1)
 		else:
-			preds = self.tagger.predict(inputs, batch_size=16, verbose=1)
+			preds = self.tagger.predict(inputs, batch_size=100, verbose=1)
 
 		final_preds = []
 		for i in range(len(self.data.X_test_enc)):
+			# print(self.data.X_test_enc.shape, preds.shape, 'classes:', self.data.n_classes)
 			pred = np.argmax(preds[i],-1)
 			pred = [self.data.idx2l[p] for p in pred]
 			final_preds.append(pred)
@@ -144,7 +144,7 @@ class Train_Test():
 			y_train, y_test = self.data.y_train_enc[train_index], self.data.y_train_enc[test_index]
 			inputs = []
 			if "elmo" in self.tagger_name.lower():
-				X_train, X_test = self.data.train_weights[train_index], self.data.train_weights[test_index]
+				X_train, X_test = self.data.X_train_text[train_index], self.data.X_test_text[test_index]
 				inputs += [X_train]
 			if self.pos:
 				inputs += [pos_train]

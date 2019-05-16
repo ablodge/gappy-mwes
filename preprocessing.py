@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
-import re, h5py
+import re#, h5py
 import numpy as np
 from collections import Counter
 from keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Embedding
+from keras.layers import Embedding, Layer
 from gensim.models import KeyedVectors
 from keras.preprocessing.text import Tokenizer
+# import tensorflow as tf
+# import tensorflow_hub as hub
+
 
 from corpus_reader import *
 
@@ -58,11 +61,13 @@ class Data(object):
         self.lang = lang
         self.glove_file = glove_file
         self.elmo_file = elmo_file
-        self.input_dim = 0
+        self.input_dim = 100
         self.model_name = model_name
         self.testORdev = testORdev
         self.depAdjacency_gcn = depAdjacency_gcn
         self.position_embed = position_embed
+        self.X_train_text = []
+        self.X_test_text = []
 
     def encode(self, sents):
         """integer encode the sentences
@@ -214,16 +219,23 @@ class Data(object):
         print("train pos array shape", self.pos_train_enc.shape)  # pos information is not necessarily used by the model
 
         if self.elmo_file:
-            self.train_weights = self.load_elmo(X_train)  # , pos_train)
+            self.X_train_text = [' '.join(sent) for sent in X_train]
+            self.X_train_text = np.array(self.X_train_text, dtype=object)[:, np.newaxis]
 
-            self.test_weights = self.load_elmo(X_test)  # , pos_test)
+            self.X_test_text = [' '.join(sent) for sent in X_test]
+            self.X_test_text = np.array(self.X_test_text, dtype=object)[:, np.newaxis]
 
-            print("train weights shape: ", self.train_weights.shape)
-            print("train weights type: ", self.train_weights.dtype)
-            self.input_dim = len(self.train_weights[0][0])
+            self.load_elmo(X_train)
+            # print("train weights shape: ", self.train_weights.shape)
+            # print("train weights type: ", self.train_weights.dtype)
+        elif self.glove_file:
+            self.load_glove()
+        else:
+            self.embedding_layer = Embedding(len(self.w2idx)+1,
+                                             self.input_dim,
+                                             trainable=True,
+                                             name='embed_layer')
 
-        if self.word2vec_file:
-            self.load_word2vec()
 
         if self.depAdjacency_gcn:
             train_adjacency = self.load_adjacency(self.dep_train, 1)
@@ -234,7 +246,7 @@ class Data(object):
 
             print("adjacency matrices size", len(self.train_adjacency_matrices))
 
-            self.input_dim = len(self.train_weights[0][0])
+            # self.input_dim = len(self.train_weights[0][0])
 
         if self.position_embed:  # I think this is not correct, the position embedding was not correct from the beginning.
             self.train_weights = np.add(self.train_weights, self.get_pos_encoding(1024))
@@ -243,12 +255,13 @@ class Data(object):
         #	print('size of the position encoded embedding: ', lst.shape)
 
     def load_glove(self):
+
         if not self.glove_file:
             pass  # do nothing if there is no path to a pre-trained embedding avialable
         else:
-            print("loading word2vec ...")
+            print("loading GLOVe ...")
             embeddings_index = {}
-            f = open(glove_file, encoding='utf8')
+            f = open(self.glove_file, encoding='utf8')
             for line in f:
                 values = line.split()
                 word = values[0]
@@ -258,8 +271,8 @@ class Data(object):
 
             print('Found %s word vectors.' % len(embeddings_index))
 
-            embedding_matrix = np.zeros((len(vocab), embedding_dim))
-            for word, i in vocab.items():
+            embedding_matrix = np.zeros((len(self.w2idx), self.input_dim))
+            for word, i in self.w2idx.items():
                 embedding_vector = embeddings_index.get(word)
                 if embedding_vector is not None:
                     # words not found in embedding index will be all-zeros.
@@ -275,9 +288,10 @@ class Data(object):
         if not self.elmo_file:
             pass  # do nothing if there is no path to a pre-trained elmo avialable
         else:
-            self.embedding_layer = ElmoEmbeddingLayer()
+            self.embedding_layer = ElmoEmbeddingLayer(name='elmo')
             print('ELMO Loaded ...')
-            return np.array(lst, dtype=np.float32)
+            self.input_dim = 1024
+
 
     # def load_headVectors(self, X, dep):
     #
@@ -355,11 +369,11 @@ class Data(object):
         return pos_enc
 
 
-# taken from
+# taken from https://towardsdatascience.com/elmo-embeddings-in-keras-with-tensorflow-hub-7eb6f0145440
 class ElmoEmbeddingLayer(Layer):
 
     def __init__(self, **kwargs):
-        self.dimensions = 100
+        self.dimensions = 1024
         self.trainable = False
         super(ElmoEmbeddingLayer, self).__init__(**kwargs)
 
