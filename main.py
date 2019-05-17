@@ -1,24 +1,24 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# import numpy as np
+import numpy as np 
 from preprocessing import Data 
 from train_test import Train_Test 
 from models.tag_models import Tagger 
 from evaluation import labels2Parsemetsv
 
 DEVorTEST = "TEST"		    	# 'TEST' or 'DEV' or 'CROSS_VAL'
-LANG = "EN"		    	# specify the name of the language (i.e. EN|FR|FA|DE)
-MODEL = "model_glove_Att_Based"		# specify the name of the training model to be used (models are defined in rnn_models.py)
+LANG = "EN_SAMPLE"		    	# specify the name of the language (i.e. EN|FR|FA|DE)
+MODEL = "model_ELMo_spect_gcn"		# specify the name of the training model to be used (models are defined in rnn_models.py)
 POS = False				# set True to use POS information (This is set to False in the reported results as the improvement was not consistent across all the models)
-DEP_ADJACENCY_GCN = False    		# True for models that require adjacency, and False otherwise
-EPOCHS = 1			# the number of epochs for trainig the model
+DEP_ADJACENCY_GCN = True    		# True for models that require adjacency, and False otherwise
+EPOCHS = 50				# the number of epochs for trainig the model 
 BATCH_SIZE = 100			# set training batch size 
 DATAPATH = "./data/"			# for each language, place train, dev, and test files in an appropriately named folder (i.e. EN|FR|FA|DE)		
 initial_weight=''			# training can be resumed from a checkpoint if a saved file of weights is assigned to this variable 
 POSITION_EMBED = False			# position embedding wasn't used (as explained in Sec 2.2 of the paper)  
 GLOVE_FILE = "./embeddings/glove.6B.100d.txt" 				# the directory for word2vec embeddings (if applicable, pass an empty string)
-ELMO_FILE = ""#./embeddings/ELMo_EN.hdf5"	    	# Place your embedding files in this directory (with the format ELMO_{EN|FR|FA|DE})
+ELMO_FILE = "./embeddings/ELMo_EN.hdf5"	    	# Place your embedding files in this directory (with the format ELMO_{EN|FR|FA|DE})
 
 def run_model():
 	d = Data(LANG, DEVorTEST, GLOVE_FILE, ELMO_FILE, MODEL, DEP_ADJACENCY_GCN, POSITION_EMBED)

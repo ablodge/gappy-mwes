@@ -25,34 +25,9 @@ class Tagger(object):
 	    ################################################
 	    ############# The baseline models ##############		
 
-	def baseline_lstm_elmo(self):
+	def model_ELMo(self):
 		"""the baseline model. similar to SHOMA but uses ELMo embeddings in lieu of word2vec"""
-		visible = Input(shape=(self.max_length,))
-		embed = self.data.embedding_layer(visible)
-		# conv1 = Conv1D(200, 2, activation="relu", padding="same", name='conv1')(embed)
-		# conv2 = Conv1D(200, 3, activation="relu", padding="same", name='conv2')(embed)
-		# conv = concatenate([conv1, conv2])
-		if self.max_length < 300:
-			lstm = Bidirectional(LSTM(300, return_sequences=True, name='lstm', dropout=0.5, recurrent_dropout=0.2))(embed)
-		else:
-			lstm = Bidirectional(CuDNNLSTM(300,return_sequences=True, name='lstm'))(conv)
-			lstm = Dropout(0.5)(lstm)
-		output = TimeDistributed(Dense(self.n_classes, activation='softmax', name='dense'), name='time_dist')(lstm)
-		model = Model(inputs=visible, outputs=output)
-		if self.initial_weight:
-			model.load_weights(self.initial_weight)
-		model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['mae', 'acc'])
-		print(model.summary())
-		return model
-
-	def baseline_glove(self):
-		"""the baseline model. similar to SHOMA but uses ELMo embeddings in lieu of word2vec"""
-		# elmo_embed = Input(shape=(self.max_length, self.input_dim))
-		# elmo_embed = self.data.embedding_layer(elmo_embed)
-		visible = Input(shape=(self.max_length,))
-		embed = self.data.embedding_layer(visible)
-		# embed = concatenate([elmo_embed, embed])
-		# embed = Input(shape=(self.max_length,self.input_dim))
+		embed = Input(shape=(self.max_length,self.input_dim))
 		conv1 = Conv1D(200, 2, activation="relu", padding="same", name='conv1')(embed)
 		conv2 = Conv1D(200, 3, activation="relu", padding="same", name='conv2')(embed)
 		conc = concatenate([conv1, conv2])
@@ -62,7 +37,7 @@ class Tagger(object):
 			lstm = Bidirectional(CuDNNLSTM(300,return_sequences=True, name='lstm'))(conc)
 			lstm = Dropout(0.5)(lstm)
 		output = TimeDistributed(Dense(self.n_classes, activation='softmax', name='dense'), name='time_dist')(lstm)		
-		model = Model(inputs=visible, outputs=output)
+		model = Model(inputs=embed, outputs=output)
 		if self.initial_weight:
 			model.load_weights(self.initial_weight)
 		model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['mae', 'acc'])
@@ -96,7 +71,6 @@ class Tagger(object):
 		elmo_embed = Input(shape=(self.max_length,self.input_dim))
 		visible = Input(shape=(self.max_length,))
 		embed = self.data.embedding_layer(visible)
-		elmo_embed = self.data.embedding_layer(elmo_embed)
 		embed = concatenate([elmo_embed, embed])
 		conv1 = Conv1D(200, 2, activation="relu", padding="same", name='conv1')(embed)
 		conv2 = Conv1D(200, 3, activation="relu", padding="same", name='conv2')(embed)
@@ -113,7 +87,6 @@ class Tagger(object):
 
 	def model_withPOS(self): 
 		"""baseline model SHOMA from the shared task. Uses word2vec"""
-
 		visible = Input(shape=(self.max_length,))
 		embed = self.embedding_layer(visible)
 		# posInput = Input(shape=(max_length, 17))
@@ -134,7 +107,7 @@ class Tagger(object):
 	    ################################################
 	    ############# The proposed models ##############
 
-	def model_glove_Att_Based(self):
+	def model_ELMo_Att_Based(self):
 		"""the model referred to as Att-based in the paper"""
 
 		# some variables to set 
@@ -142,12 +115,7 @@ class Tagger(object):
 		dim = hidden * 2 
 		heads = 4
 
-		# elmo_embed = Input(shape=(self.max_length, self.input_dim))
-		# elmo_embed = self.data.embedding_layer(elmo_embed)
-		visible = Input(shape=(self.max_length,))
-		embed = self.data.embedding_layer(visible)
-		# embed = concatenate([elmo_embed, embed])
-		# embed = Input(shape=(self.max_length,self.input_dim))
+		embed = Input(shape=(self.max_length,self.input_dim))
 		# stacked CNNs
 		c1 = Conv1D(100, 1, activation="relu", padding="same", dilation_rate=1)(embed)
 		c2 = Conv1D(100, 1, activation="relu", padding="same", dilation_rate=1)(c1) 
